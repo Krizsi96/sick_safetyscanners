@@ -1,0 +1,9 @@
+[package]
+name = "sick_safetyscanners"
+version = "0.1.0"
+edition = "2021"
+authors = [
+    "Kristof Kovacs <kristof.kovacs1996@gmail.com>"
+]
+
+[dependencies]
