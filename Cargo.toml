@@ -7,3 +7,4 @@ authors = [
 ]
 
 [dependencies]
+array-concat = "0.5.3"
