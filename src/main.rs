@@ -54,6 +54,69 @@ fn main() -> std::io::Result<()> {
                 .map(|byte| format!("{:02x}", byte))
                 .collect::<Vec<String>>()
         );
+
+        if datagram_header.fragment_offset == 0 {
+            let version = data_field[0];
+            let maj_version = data_field[1];
+            let min_version = data_field[2];
+            let release = data_field[3];
+            let serial_number = u32::from_le_bytes(data_field[4..8].try_into().unwrap());
+            let system_plug_serial_number =
+                u32::from_le_bytes(data_field[8..12].try_into().unwrap());
+            let channel_number = data_field[12];
+            let sequence_number = u32::from_le_bytes(data_field[16..20].try_into().unwrap());
+            let scan_number = u32::from_le_bytes(data_field[20..24].try_into().unwrap());
+            let time_stamp_date = u16::from_le_bytes(data_field[24..26].try_into().unwrap());
+            let time_stamp_time = u32::from_le_bytes(data_field[28..32].try_into().unwrap());
+            let block_device_status_offset =
+                u16::from_le_bytes(data_field[32..34].try_into().unwrap());
+            let block_device_status_size =
+                u16::from_le_bytes(data_field[34..36].try_into().unwrap());
+            let block_output_configuration_offset =
+                u16::from_le_bytes(data_field[36..38].try_into().unwrap());
+            let block_output_configuration_size =
+                u16::from_le_bytes(data_field[38..40].try_into().unwrap());
+            let block_measurement_data_offset =
+                u16::from_le_bytes(data_field[40..42].try_into().unwrap());
+            let block_measurement_data_size =
+                u16::from_le_bytes(data_field[42..44].try_into().unwrap());
+            let block_field_interruption_offset =
+                u16::from_le_bytes(data_field[44..46].try_into().unwrap());
+            let block_field_interruption_size =
+                u16::from_le_bytes(data_field[46..48].try_into().unwrap());
+            let block_application_data_offset =
+                u16::from_le_bytes(data_field[48..50].try_into().unwrap());
+            let block_application_data_size =
+                u16::from_le_bytes(data_field[50..52].try_into().unwrap());
+            let block_local_ios_offset = u16::from_le_bytes(data_field[52..54].try_into().unwrap());
+            let block_local_ios_size = u16::from_le_bytes(data_field[54..56].try_into().unwrap());
+
+            println!(
+                "version: {version}\n\
+            major version: {maj_version}\n\
+            minor version: {min_version}\n\
+            release: {release}\n\
+            serial number: {serial_number}\n\
+            system plug serial number: {system_plug_serial_number}\n\
+            channel number: {channel_number}\n\
+            sequence number: {sequence_number}\n\
+            scan number: {scan_number}\n\
+            time stamp date: {time_stamp_date}\n\
+            time stamp time: {time_stamp_time}\n\
+            block device status offset: {block_device_status_offset}\n\
+            block device status size: {block_device_status_size}\n\
+            block output configuration offset: {block_output_configuration_offset}\n\
+            block output configuration size: {block_output_configuration_size}\n\
+            block measurement data offset: {block_measurement_data_offset}\n\
+            block measurement data size: {block_measurement_data_size}\n\
+            block field interruption offset: {block_field_interruption_offset}\n\
+            block field interruption size: {block_field_interruption_size}\n\
+            block application data offset: {block_application_data_offset}\n\
+            block application data size: {block_application_data_size}\n\
+            block local IOs offset: {block_local_ios_offset}\n\
+            block local IOs size: {block_local_ios_size}"
+            )
+        }
     }
     Ok(())
 }
