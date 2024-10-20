@@ -77,15 +77,19 @@ pub struct OutputConfigurationBlock {
     pub beam_interval: u32,
 }
 
+const START_ANGLE_DENOMINATOR: i32 = 4_194_304;
+const ANGULAR_RESOLUTION_DENOMINATOR: f32 = 4_194_304.0;
+
 impl OutputConfigurationBlock {
     pub fn from_bytes(bytes: &[u8]) -> Self {
         Self {
             factor: u16::from_le_bytes(bytes[0..2].try_into().unwrap()),
             number_of_beams: u16::from_le_bytes(bytes[2..4].try_into().unwrap()),
             scan_cycle_time: u16::from_le_bytes(bytes[4..6].try_into().unwrap()),
-            start_angle: i32::from_le_bytes(bytes[8..12].try_into().unwrap()) / 4_194_304,
+            start_angle: i32::from_le_bytes(bytes[8..12].try_into().unwrap())
+                / START_ANGLE_DENOMINATOR,
             angular_resolution: (i32::from_le_bytes(bytes[12..16].try_into().unwrap()) as f32)
-                / 4_194_304.0,
+                / ANGULAR_RESOLUTION_DENOMINATOR,
             beam_interval: u32::from_le_bytes(bytes[16..20].try_into().unwrap()),
         }
     }
@@ -355,7 +359,9 @@ mod data_output_header_tests {
 
 #[cfg(test)]
 mod output_configuration_block_tests {
-    use crate::data_output::OutputConfigurationBlock;
+    use crate::data_output::{
+        OutputConfigurationBlock, ANGULAR_RESOLUTION_DENOMINATOR, START_ANGLE_DENOMINATOR,
+    };
     use array_concat::concat_arrays;
 
     #[test]
@@ -424,8 +430,9 @@ mod output_configuration_block_tests {
                 factor: u16::from_le_bytes(factor),
                 number_of_beams: u16::from_le_bytes(number_of_beams),
                 scan_cycle_time: u16::from_le_bytes(scan_cycle_time),
-                start_angle: i32::from_le_bytes(start_angle) / 4_194_304,
-                angular_resolution: (i32::from_le_bytes(angular_resolution) as f32) / 4_194_304.0,
+                start_angle: i32::from_le_bytes(start_angle) / START_ANGLE_DENOMINATOR,
+                angular_resolution: (i32::from_le_bytes(angular_resolution) as f32)
+                    / ANGULAR_RESOLUTION_DENOMINATOR,
                 beam_interval: u32::from_le_bytes(beam_interval),
             },
         )

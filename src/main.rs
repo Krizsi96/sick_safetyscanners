@@ -1,7 +1,7 @@
 extern crate sick_safetyscanners;
 
 use sick_safetyscanners::data_output::{DataOutputHeader, OutputConfigurationBlock};
-use sick_safetyscanners::udp::parse_udp_datagram_header;
+use sick_safetyscanners::udp::UDPDatagramHeader;
 use std::net::UdpSocket;
 
 fn main() -> std::io::Result<()> {
@@ -14,7 +14,7 @@ fn main() -> std::io::Result<()> {
         let (message_size, source_address) = socket.recv_from(&mut buf)?;
         println!("received packet from {}", source_address);
 
-        let datagram_header = parse_udp_datagram_header(&buf);
+        let datagram_header = UDPDatagramHeader::from_bytes(&buf);
         println!("\n{:?}", datagram_header);
 
         let data_field = &buf[24..message_size];
