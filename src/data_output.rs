@@ -1,7 +1,7 @@
 #[derive(Copy, Clone, Debug)]
-struct Block {
-    offset: u16,
-    size: u16,
+pub struct Block {
+    pub offset: u16,
+    pub size: u16,
 }
 
 #[derive(Debug)]
@@ -18,7 +18,7 @@ pub struct DataOutputHeader {
     time_stamp_date: u16,
     time_stamp_time: u32,
     device_status_block: Block,
-    output_configuration_block: Block,
+    pub output_configuration_block: Block,
     measurement_data_block: Block,
     field_interruption_block: Block,
     application_data_block: Block,
@@ -27,7 +27,7 @@ pub struct DataOutputHeader {
 
 impl DataOutputHeader {
     pub fn from_bytes(bytes: &[u8]) -> Self {
-        DataOutputHeader {
+        Self {
             version: bytes[0],
             version_major: bytes[1],
             version_minor: bytes[2],
@@ -63,6 +63,30 @@ impl DataOutputHeader {
                 offset: u16::from_le_bytes(bytes[52..54].try_into().unwrap()),
                 size: u16::from_le_bytes(bytes[54..56].try_into().unwrap()),
             },
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct OutputConfigurationBlock {
+    pub factor: u16,
+    pub number_of_beams: u16,
+    pub scan_cycle_time: u16,
+    pub start_angle: i32,
+    pub angular_resolution: f32,
+    pub beam_interval: u32,
+}
+
+impl OutputConfigurationBlock {
+    pub fn from_bytes(bytes: &[u8]) -> Self {
+        Self {
+            factor: u16::from_le_bytes(bytes[0..2].try_into().unwrap()),
+            number_of_beams: u16::from_le_bytes(bytes[2..4].try_into().unwrap()),
+            scan_cycle_time: u16::from_le_bytes(bytes[4..6].try_into().unwrap()),
+            start_angle: i32::from_le_bytes(bytes[8..12].try_into().unwrap()) / 4_194_304,
+            angular_resolution: (i32::from_le_bytes(bytes[12..16].try_into().unwrap()) as f32)
+                / 4_194_304.0,
+            beam_interval: u32::from_le_bytes(bytes[16..20].try_into().unwrap()),
         }
     }
 }
@@ -324,6 +348,85 @@ mod data_output_header_tests {
                     offset: u16::from_le_bytes(block_local_ios_offset),
                     size: u16::from_le_bytes(block_local_ios_size),
                 },
+            },
+        )
+    }
+}
+
+#[cfg(test)]
+mod output_configuration_block_tests {
+    use crate::data_output::OutputConfigurationBlock;
+    use array_concat::concat_arrays;
+
+    #[test]
+    fn parse_factor_from_valid_block() {
+        let (test_data, expected_block) = create_valid_test_data();
+        let result = OutputConfigurationBlock::from_bytes(&test_data);
+        assert_eq!(result.factor, expected_block.factor);
+    }
+
+    #[test]
+    fn parse_number_of_beams_from_valid_block() {
+        let (test_data, expected_block) = create_valid_test_data();
+        let result = OutputConfigurationBlock::from_bytes(&test_data);
+        assert_eq!(result.number_of_beams, expected_block.number_of_beams);
+    }
+
+    #[test]
+    fn parse_scan_cycle_time_from_valid_block() {
+        let (test_data, expected_block) = create_valid_test_data();
+        let result = OutputConfigurationBlock::from_bytes(&test_data);
+        assert_eq!(result.scan_cycle_time, expected_block.scan_cycle_time);
+    }
+
+    #[test]
+    fn parse_start_angle_from_valid_block() {
+        let (test_data, expected_block) = create_valid_test_data();
+        let result = OutputConfigurationBlock::from_bytes(&test_data);
+        assert_eq!(result.start_angle, expected_block.start_angle);
+    }
+
+    #[test]
+    fn parse_angular_resolution_from_valid_block() {
+        let (test_data, expected_block) = create_valid_test_data();
+        let result = OutputConfigurationBlock::from_bytes(&test_data);
+        assert_eq!(result.angular_resolution, expected_block.angular_resolution);
+    }
+
+    #[test]
+    fn parse_beam_interval_from_valid_block() {
+        let (test_data, expected_block) = create_valid_test_data();
+        let result = OutputConfigurationBlock::from_bytes(&test_data);
+        assert_eq!(result.beam_interval, expected_block.beam_interval);
+    }
+
+    fn create_valid_test_data() -> ([u8; 24], OutputConfigurationBlock) {
+        let factor = [0x12, 0x23];
+        let number_of_beams = [0x86, 0xAE];
+        let scan_cycle_time = [0x45, 0x67];
+        let reserved1 = [0; 2];
+        let start_angle = [0xC0, 0xFF, 0xEE, 0x69];
+        let angular_resolution = [0xAB, 0xBA, 0xFE, 0xC0];
+        let beam_interval = [0x01, 0x23, 0x45, 0x56];
+        let reserved2 = [0; 4];
+        (
+            concat_arrays!(
+                factor,
+                number_of_beams,
+                scan_cycle_time,
+                reserved1,
+                start_angle,
+                angular_resolution,
+                beam_interval,
+                reserved2
+            ),
+            OutputConfigurationBlock {
+                factor: u16::from_le_bytes(factor),
+                number_of_beams: u16::from_le_bytes(number_of_beams),
+                scan_cycle_time: u16::from_le_bytes(scan_cycle_time),
+                start_angle: i32::from_le_bytes(start_angle) / 4_194_304,
+                angular_resolution: (i32::from_le_bytes(angular_resolution) as f32) / 4_194_304.0,
+                beam_interval: u32::from_le_bytes(beam_interval),
             },
         )
     }
