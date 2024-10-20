@@ -1,10 +1,10 @@
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Block {
     pub offset: u16,
     pub size: u16,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct DataOutputHeader {
     version: u8,
     version_major: u8,
@@ -67,7 +67,7 @@ impl DataOutputHeader {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct OutputConfigurationBlock {
     pub factor: u16,
     pub number_of_beams: u16,
@@ -77,15 +77,19 @@ pub struct OutputConfigurationBlock {
     pub beam_interval: u32,
 }
 
+const START_ANGLE_DENOMINATOR: i32 = 4_194_304;
+const ANGULAR_RESOLUTION_DENOMINATOR: f32 = 4_194_304.0;
+
 impl OutputConfigurationBlock {
     pub fn from_bytes(bytes: &[u8]) -> Self {
         Self {
             factor: u16::from_le_bytes(bytes[0..2].try_into().unwrap()),
             number_of_beams: u16::from_le_bytes(bytes[2..4].try_into().unwrap()),
             scan_cycle_time: u16::from_le_bytes(bytes[4..6].try_into().unwrap()),
-            start_angle: i32::from_le_bytes(bytes[8..12].try_into().unwrap()) / 4_194_304,
+            start_angle: i32::from_le_bytes(bytes[8..12].try_into().unwrap())
+                / START_ANGLE_DENOMINATOR,
             angular_resolution: (i32::from_le_bytes(bytes[12..16].try_into().unwrap()) as f32)
-                / 4_194_304.0,
+                / ANGULAR_RESOLUTION_DENOMINATOR,
             beam_interval: u32::from_le_bytes(bytes[16..20].try_into().unwrap()),
         }
     }
@@ -97,164 +101,10 @@ mod data_output_header_tests {
     use array_concat::concat_arrays;
 
     #[test]
-    fn parse_version_from_valid_header() {
+    fn parse_from_valid_header() {
         let (test_data, expected_header) = create_valid_test_data();
         let result = DataOutputHeader::from_bytes(&test_data);
-        assert_eq!(result.version, expected_header.version);
-    }
-
-    #[test]
-    fn parse_version_major_from_valid_header() {
-        let (test_data, expected_header) = create_valid_test_data();
-        let result = DataOutputHeader::from_bytes(&test_data);
-        assert_eq!(result.version_major, expected_header.version_major);
-    }
-
-    #[test]
-    fn parse_version_minor_from_valid_header() {
-        let (test_data, expected_header) = create_valid_test_data();
-        let result = DataOutputHeader::from_bytes(&test_data);
-        assert_eq!(result.version_minor, expected_header.version_minor);
-    }
-
-    #[test]
-    fn parse_release_from_valid_header() {
-        let (test_data, expected_header) = create_valid_test_data();
-        let result = DataOutputHeader::from_bytes(&test_data);
-        assert_eq!(result.release, expected_header.release);
-    }
-
-    #[test]
-    fn parse_device_serial_number_from_valid_header() {
-        let (test_data, expected_header) = create_valid_test_data();
-        let result = DataOutputHeader::from_bytes(&test_data);
-        assert_eq!(
-            result.device_serial_number,
-            expected_header.device_serial_number
-        );
-    }
-
-    #[test]
-    fn parse_system_plug_serial_number_from_valid_header() {
-        let (test_data, expected_header) = create_valid_test_data();
-        let result = DataOutputHeader::from_bytes(&test_data);
-        assert_eq!(
-            result.system_plug_serial_number,
-            expected_header.system_plug_serial_number
-        );
-    }
-
-    #[test]
-    fn parse_channel_number_from_valid_header() {
-        let (test_data, expected_header) = create_valid_test_data();
-        let result = DataOutputHeader::from_bytes(&test_data);
-        assert_eq!(result.channel_number, expected_header.channel_number);
-    }
-
-    #[test]
-    fn parse_sequence_number_from_valid_header() {
-        let (test_data, expected_header) = create_valid_test_data();
-        let result = DataOutputHeader::from_bytes(&test_data);
-        assert_eq!(result.sequence_number, expected_header.sequence_number);
-    }
-
-    #[test]
-    fn parse_scan_number_from_valid_header() {
-        let (test_data, expected_header) = create_valid_test_data();
-        let result = DataOutputHeader::from_bytes(&test_data);
-        assert_eq!(result.scan_number, expected_header.scan_number);
-    }
-
-    #[test]
-    fn parse_time_stamp_from_valid_header() {
-        let (test_data, expected_header) = create_valid_test_data();
-        let result = DataOutputHeader::from_bytes(&test_data);
-        assert_eq!(result.time_stamp_date, expected_header.time_stamp_date);
-        assert_eq!(result.time_stamp_time, expected_header.time_stamp_time);
-    }
-
-    #[test]
-    fn parse_device_status_block_info_from_valid_header() {
-        let (test_data, expected_header) = create_valid_test_data();
-        let result = DataOutputHeader::from_bytes(&test_data);
-        assert_eq!(
-            result.device_status_block.offset,
-            expected_header.device_status_block.offset
-        );
-        assert_eq!(
-            result.device_status_block.size,
-            expected_header.device_status_block.size
-        );
-    }
-
-    #[test]
-    fn parse_output_configuration_block_info_from_valid_header() {
-        let (test_data, expected_header) = create_valid_test_data();
-        let result = DataOutputHeader::from_bytes(&test_data);
-        assert_eq!(
-            result.output_configuration_block.offset,
-            expected_header.output_configuration_block.offset
-        );
-        assert_eq!(
-            result.output_configuration_block.size,
-            expected_header.output_configuration_block.size
-        );
-    }
-
-    #[test]
-    fn parse_measurement_data_block_info_from_valid_header() {
-        let (test_data, expected_header) = create_valid_test_data();
-        let result = DataOutputHeader::from_bytes(&test_data);
-        assert_eq!(
-            result.measurement_data_block.offset,
-            expected_header.measurement_data_block.offset
-        );
-        assert_eq!(
-            result.measurement_data_block.size,
-            expected_header.measurement_data_block.size
-        );
-    }
-
-    #[test]
-    fn parse_field_interruption_block_info_from_valid_header() {
-        let (test_data, expected_header) = create_valid_test_data();
-        let result = DataOutputHeader::from_bytes(&test_data);
-        assert_eq!(
-            result.field_interruption_block.offset,
-            expected_header.field_interruption_block.offset
-        );
-        assert_eq!(
-            result.field_interruption_block.size,
-            result.field_interruption_block.size
-        );
-    }
-
-    #[test]
-    fn parse_application_data_block_info_from_valid_header() {
-        let (test_data, expected_header) = create_valid_test_data();
-        let result = DataOutputHeader::from_bytes(&test_data);
-        assert_eq!(
-            result.application_data_block.offset,
-            expected_header.application_data_block.offset
-        );
-        assert_eq!(
-            result.application_data_block.size,
-            expected_header.application_data_block.size
-        );
-    }
-
-    #[test]
-    fn parse_local_ios_block_info_from_valid_header() {
-        let (test_data, expected_header) = create_valid_test_data();
-        let result = DataOutputHeader::from_bytes(&test_data);
-        assert_eq!(
-            result.local_ios_block.offset,
-            expected_header.local_ios_block.offset
-        );
-        assert_eq!(
-            result.local_ios_block.size,
-            expected_header.local_ios_block.size
-        );
+        assert_eq!(result, expected_header);
     }
 
     fn create_valid_test_data() -> ([u8; 64], DataOutputHeader) {
@@ -283,6 +133,7 @@ mod data_output_header_tests {
         let block_application_data_size = [0x19, 0x96];
         let block_local_ios_offset = [0xAD, 0xFE];
         let block_local_ios_size = [0xCE, 0xBA];
+        let padding = [0; 8];
         (
             concat_arrays!(
                 version,
@@ -310,7 +161,7 @@ mod data_output_header_tests {
                 block_application_data_size,
                 block_local_ios_offset,
                 block_local_ios_size,
-                [0; 8]
+                padding
             ),
             DataOutputHeader {
                 version: u8::from_le_bytes(version),
@@ -355,49 +206,16 @@ mod data_output_header_tests {
 
 #[cfg(test)]
 mod output_configuration_block_tests {
-    use crate::data_output::OutputConfigurationBlock;
+    use crate::data_output::{
+        OutputConfigurationBlock, ANGULAR_RESOLUTION_DENOMINATOR, START_ANGLE_DENOMINATOR,
+    };
     use array_concat::concat_arrays;
 
     #[test]
-    fn parse_factor_from_valid_block() {
+    fn parse_from_valid_block() {
         let (test_data, expected_block) = create_valid_test_data();
         let result = OutputConfigurationBlock::from_bytes(&test_data);
-        assert_eq!(result.factor, expected_block.factor);
-    }
-
-    #[test]
-    fn parse_number_of_beams_from_valid_block() {
-        let (test_data, expected_block) = create_valid_test_data();
-        let result = OutputConfigurationBlock::from_bytes(&test_data);
-        assert_eq!(result.number_of_beams, expected_block.number_of_beams);
-    }
-
-    #[test]
-    fn parse_scan_cycle_time_from_valid_block() {
-        let (test_data, expected_block) = create_valid_test_data();
-        let result = OutputConfigurationBlock::from_bytes(&test_data);
-        assert_eq!(result.scan_cycle_time, expected_block.scan_cycle_time);
-    }
-
-    #[test]
-    fn parse_start_angle_from_valid_block() {
-        let (test_data, expected_block) = create_valid_test_data();
-        let result = OutputConfigurationBlock::from_bytes(&test_data);
-        assert_eq!(result.start_angle, expected_block.start_angle);
-    }
-
-    #[test]
-    fn parse_angular_resolution_from_valid_block() {
-        let (test_data, expected_block) = create_valid_test_data();
-        let result = OutputConfigurationBlock::from_bytes(&test_data);
-        assert_eq!(result.angular_resolution, expected_block.angular_resolution);
-    }
-
-    #[test]
-    fn parse_beam_interval_from_valid_block() {
-        let (test_data, expected_block) = create_valid_test_data();
-        let result = OutputConfigurationBlock::from_bytes(&test_data);
-        assert_eq!(result.beam_interval, expected_block.beam_interval);
+        assert_eq!(result, expected_block);
     }
 
     fn create_valid_test_data() -> ([u8; 24], OutputConfigurationBlock) {
@@ -424,8 +242,9 @@ mod output_configuration_block_tests {
                 factor: u16::from_le_bytes(factor),
                 number_of_beams: u16::from_le_bytes(number_of_beams),
                 scan_cycle_time: u16::from_le_bytes(scan_cycle_time),
-                start_angle: i32::from_le_bytes(start_angle) / 4_194_304,
-                angular_resolution: (i32::from_le_bytes(angular_resolution) as f32) / 4_194_304.0,
+                start_angle: i32::from_le_bytes(start_angle) / START_ANGLE_DENOMINATOR,
+                angular_resolution: (i32::from_le_bytes(angular_resolution) as f32)
+                    / ANGULAR_RESOLUTION_DENOMINATOR,
                 beam_interval: u32::from_le_bytes(beam_interval),
             },
         )
