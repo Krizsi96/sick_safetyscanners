@@ -1,11 +1,11 @@
 #[derive(Debug, PartialEq)]
 pub struct UDPDatagramHeader {
-    datagram_marker: String,
-    protocol: String,
-    version_maj: u8,
-    version_min: u8,
-    total_length: u32,
-    identification: u32,
+    pub datagram_marker: String,
+    pub protocol: String,
+    pub version_maj: u8,
+    pub version_min: u8,
+    pub total_length: u32,
+    pub identification: u32,
     pub fragment_offset: u32,
 }
 

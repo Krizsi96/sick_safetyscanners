@@ -12,23 +12,23 @@ pub struct Block {
 
 #[derive(Debug, PartialEq)]
 pub struct DataOutputHeader {
-    version: u8,
-    version_major: u8,
-    version_minor: u8,
-    release: u8,
-    device_serial_number: u32,
-    system_plug_serial_number: u32,
-    channel_number: u8,
-    sequence_number: u32,
-    scan_number: u32,
-    time_stamp_date: u16,
-    time_stamp_time: u32,
-    device_status_block: Block,
+    pub version: u8,
+    pub version_major: u8,
+    pub version_minor: u8,
+    pub release: u8,
+    pub device_serial_number: u32,
+    pub system_plug_serial_number: u32,
+    pub channel_number: u8,
+    pub sequence_number: u32,
+    pub scan_number: u32,
+    pub time_stamp_date: u16,
+    pub time_stamp_time: u32,
+    pub device_status_block: Block,
     pub output_configuration_block: Block,
-    measurement_data_block: Block,
-    field_interruption_block: Block,
-    application_data_block: Block,
-    local_ios_block: Block,
+    pub measurement_data_block: Block,
+    pub field_interruption_block: Block,
+    pub application_data_block: Block,
+    pub local_ios_block: Block,
 }
 
 impl DataOutputHeader {
@@ -290,10 +290,11 @@ mod data_output_header_tests {
 
 #[cfg(test)]
 mod output_configuration_block_tests {
+    use array_concat::concat_arrays;
+
     use crate::data_output::{
         OutputConfigurationBlock, ANGULAR_RESOLUTION_DENOMINATOR, START_ANGLE_DENOMINATOR,
     };
-    use array_concat::concat_arrays;
 
     #[test]
     fn parse_from_valid_block() {

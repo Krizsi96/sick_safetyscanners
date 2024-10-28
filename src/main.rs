@@ -1,6 +1,8 @@
 extern crate sick_safetyscanners;
 
-use sick_safetyscanners::data_output::{DataOutputHeader, OutputConfigurationBlock};
+use sick_safetyscanners::data_output::{
+    DataOutputHeader, MeasurementDataBlock, OutputConfigurationBlock,
+};
 use sick_safetyscanners::udp::UDPDatagramHeader;
 use std::net::UdpSocket;
 
@@ -11,32 +13,76 @@ fn main() -> std::io::Result<()> {
         // Receives a single datagram message on the socket. If 'buf' is too small
         // to hold the message, it will be cut off.
         let mut buf = [0; 2048];
-        let (message_size, source_address) = socket.recv_from(&mut buf)?;
-        println!("received packet from {}", source_address);
+        let mut udp_message_buffer = [0u8; 4096];
+        let mut identification = 0;
+        let mut total_length: u32 = 0;
+        let mut udp_bytes_counter: u32 = 0;
+        let mut program_finished = false;
 
-        let datagram_header = UDPDatagramHeader::from_bytes(&buf);
-        println!("\n{:?}", datagram_header);
+        while !program_finished {
+            let (message_size, source_address) = socket.recv_from(&mut buf)?;
+            println!("\n-------\nreceived packet from {}", source_address);
 
-        let data_field = &buf[24..message_size];
+            let datagram_header = UDPDatagramHeader::from_bytes(&buf);
+            println!("\n{:?}", datagram_header);
 
-        if datagram_header.fragment_offset == 0 {
-            let data_output_header = DataOutputHeader::from_bytes(&data_field);
-            println!("{:?}", data_output_header);
+            let data_field = &buf[24..message_size];
 
-            let start_idx: usize = data_output_header.output_configuration_block.offset as usize;
-            let end_idx: usize =
-                start_idx + (data_output_header.output_configuration_block.size as usize);
-            let output_configuration = &data_field[start_idx..end_idx];
-            let output_configuration = OutputConfigurationBlock::from_bytes(output_configuration);
-            println!("\n{:?}", output_configuration);
-        } else {
-            println!(
-                "data field: {:?}",
-                data_field
-                    .iter()
-                    .map(|byte| format!("{:02x}", byte))
-                    .collect::<Vec<String>>()
-            );
+            if datagram_header.fragment_offset == 0 {
+                udp_message_buffer = [0u8; 4096];
+                udp_bytes_counter = 0;
+                total_length = 0;
+                println!(
+                    "{:?}, \nbyte counter: {udp_bytes_counter}\ntotal length: {total_length}",
+                    udp_message_buffer
+                );
+
+                identification = datagram_header.identification;
+                total_length = datagram_header.total_length;
+                let start_index: usize = datagram_header.fragment_offset as usize;
+                let end_index: usize = start_index + data_field.len();
+                println!("slice starts: {start_index}, ends: {end_index}");
+                udp_bytes_counter += data_field.len() as u32;
+                udp_message_buffer[start_index..end_index].copy_from_slice(data_field);
+                println!(
+                    "{:?}, \nbyte counter: {udp_bytes_counter}\ntotal length: {total_length}",
+                    udp_message_buffer
+                );
+            } else if datagram_header.identification == identification {
+                let start_index: usize = datagram_header.fragment_offset as usize;
+                let end_index: usize = start_index + data_field.len();
+                println!("slice starts: {start_index}, ends: {end_index}");
+                udp_bytes_counter += data_field.len() as u32;
+                udp_message_buffer[start_index..end_index].copy_from_slice(data_field);
+                println!(
+                    "{:?}, \nbyte counter: {udp_bytes_counter}\ntotal length: {total_length}",
+                    udp_message_buffer
+                );
+
+                if udp_bytes_counter == total_length {
+                    let data_output_header = DataOutputHeader::from_bytes(&udp_message_buffer);
+                    println!("{:?}", data_output_header);
+
+                    let start_idx: usize =
+                        data_output_header.output_configuration_block.offset as usize;
+                    let end_idx: usize =
+                        start_idx + (data_output_header.output_configuration_block.size as usize);
+                    let output_configuration = &udp_message_buffer[start_idx..end_idx];
+                    let output_configuration =
+                        OutputConfigurationBlock::from_bytes(output_configuration);
+                    println!("\n{:?}", output_configuration);
+
+                    let start_idx: usize =
+                        data_output_header.measurement_data_block.offset as usize;
+                    let end_idx: usize =
+                        start_idx + (data_output_header.measurement_data_block.size as usize);
+                    let measurement_data = &udp_message_buffer[start_idx..end_idx];
+                    let measurement_data = MeasurementDataBlock::from_bytes(measurement_data);
+                    println!("\n{:?}", measurement_data);
+
+                    program_finished = true;
+                }
+            }
         }
     }
     Ok(())
