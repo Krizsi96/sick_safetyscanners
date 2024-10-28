@@ -1,7 +1,7 @@
 extern crate sick_safetyscanners;
 
 use sick_safetyscanners::data_output::{
-    DataOutputHeader, MeasurementDataBlock, OutputConfigurationBlock,
+    DataOutputHeader, DeviceStatus, MeasurementDataBlock, OutputConfigurationBlock,
 };
 use sick_safetyscanners::udp::UDPDatagramHeader;
 use std::net::UdpSocket;
@@ -62,6 +62,13 @@ fn main() -> std::io::Result<()> {
                 if udp_bytes_counter == total_length {
                     let data_output_header = DataOutputHeader::from_bytes(&udp_message_buffer);
                     println!("{:?}", data_output_header);
+
+                    let start_idx: usize = data_output_header.device_status_block.offset as usize;
+                    let end_idx: usize =
+                        start_idx + data_output_header.device_status_block.size as usize;
+                    let device_status = &udp_message_buffer[start_idx..end_idx];
+                    let device_status = DeviceStatus::from_bytes(device_status);
+                    println!("\n{:?}", device_status);
 
                     let start_idx: usize =
                         data_output_header.output_configuration_block.offset as usize;

@@ -8,3 +8,4 @@ authors = [
 
 [dependencies]
 array-concat = "0.5.3"
+bitflags = "2.6.0"
