@@ -1,10 +1,12 @@
 extern crate sick_safetyscanners;
 
-use sick_safetyscanners::data_output::{
-    DataOutputHeader, DeviceStatus, MeasurementDataBlock, OutputConfigurationBlock,
-};
-use sick_safetyscanners::udp::UDPDatagramHeader;
 use std::net::UdpSocket;
+
+use sick_safetyscanners::data_output::device_status::DeviceStatus;
+use sick_safetyscanners::data_output::measurement_data::MeasurementDataBlock;
+use sick_safetyscanners::data_output::output_configuration::OutputConfigurationBlock;
+use sick_safetyscanners::data_output::DataOutputHeader;
+use sick_safetyscanners::udp::UDPDatagramHeader;
 
 fn main() -> std::io::Result<()> {
     {
