@@ -3,6 +3,7 @@ extern crate sick_safetyscanners;
 use std::net::UdpSocket;
 
 use sick_safetyscanners::data_output::device_status::DeviceStatus;
+use sick_safetyscanners::data_output::field_interruption::FieldInterruptions;
 use sick_safetyscanners::data_output::measurement_data::MeasurementDataBlock;
 use sick_safetyscanners::data_output::output_configuration::OutputConfigurationBlock;
 use sick_safetyscanners::data_output::DataOutputHeader;
@@ -88,6 +89,18 @@ fn main() -> std::io::Result<()> {
                     let measurement_data = &udp_message_buffer[start_idx..end_idx];
                     let measurement_data = MeasurementDataBlock::from_bytes(measurement_data);
                     println!("\n{:?}", measurement_data);
+
+                    let start_idx: usize =
+                        data_output_header.field_interruption_block.offset as usize;
+                    let end_idx: usize =
+                        start_idx + (data_output_header.field_interruption_block.size as usize);
+                    let field_interruptions = &udp_message_buffer[start_idx..end_idx];
+                    match FieldInterruptions::from_bytes(field_interruptions) {
+                        Some(field_interruptions) => println!("\n{:?}", field_interruptions),
+                        None => {
+                            println!("\nThere is no field interruption block in the datagram.")
+                        }
+                    };
 
                     program_finished = true;
                 }

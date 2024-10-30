@@ -1,6 +1,7 @@
 use std::convert::TryInto;
 
 pub mod device_status;
+pub mod field_interruption;
 pub mod measurement_data;
 pub mod output_configuration;
 
