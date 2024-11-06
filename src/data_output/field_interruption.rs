@@ -2,9 +2,11 @@ use std::ops::Range;
 
 use bitflags::bitflags;
 
+const NUMBER_OF_CUT_OFF_PATHS: usize = 24;
+
 #[derive(Debug, PartialEq)]
 pub struct FieldInterruptions {
-    cut_off_paths: Vec<CutOffPath>,
+    cut_off_paths: [CutOffPath; NUMBER_OF_CUT_OFF_PATHS],
 }
 
 impl FieldInterruptions {
@@ -12,32 +14,33 @@ impl FieldInterruptions {
         if bytes.len() == 0 {
             return None;
         }
-
-        let mut cut_off_paths: Vec<CutOffPath> = Vec::new();
-
-        const U32_BYTES_NUMBER: usize = 4;
-        const NUMBER_OF_CUT_OFF_PATHS: i32 = 24;
-        let mut start_of_cut_off_path: usize = 0;
-
-        for _ in 1..=NUMBER_OF_CUT_OFF_PATHS {
-            let number_of_flag_bytes: Range<usize> =
-                start_of_cut_off_path..start_of_cut_off_path + U32_BYTES_NUMBER;
-            let number_of_flag_bytes: usize =
-                u32::from_le_bytes(bytes[number_of_flag_bytes].try_into().unwrap()) as usize;
-
-            let end_of_cut_off_path_bytes =
-                start_of_cut_off_path + U32_BYTES_NUMBER + number_of_flag_bytes;
-
-            let flag_bytes: Range<usize> =
-                start_of_cut_off_path + U32_BYTES_NUMBER..end_of_cut_off_path_bytes;
-            let flag_bytes = &bytes[flag_bytes];
-
-            cut_off_paths.push(CutOffPath::from_bytes(flag_bytes));
-
-            start_of_cut_off_path = end_of_cut_off_path_bytes;
-        }
+        // Second Version of the implementation
+        let mut start_index: usize = 0;
+        let cut_off_paths: [CutOffPath; NUMBER_OF_CUT_OFF_PATHS] = (0..NUMBER_OF_CUT_OFF_PATHS)
+            .map(|_| {
+                let (flag_bytes, end_index) = Self::get_flag_bytes(start_index, bytes);
+                start_index = end_index;
+                CutOffPath::from_bytes(flag_bytes)
+            })
+            .collect::<Vec<CutOffPath>>()
+            .try_into()
+            .unwrap();
 
         Some(Self { cut_off_paths })
+    }
+
+    fn get_flag_bytes(start_index: usize, bytes: &[u8]) -> (&[u8], usize) {
+        const BYTES_IN_U32: usize = 4;
+        let number_of_flag_bytes: Range<usize> = start_index..start_index + BYTES_IN_U32;
+        let number_of_flag_bytes =
+            u32::from_le_bytes(bytes[number_of_flag_bytes].try_into().unwrap()) as usize;
+
+        let end_index = start_index + BYTES_IN_U32 + number_of_flag_bytes;
+
+        let flag_bytes: Range<usize> = start_index + BYTES_IN_U32..end_index;
+        let flag_bytes = &bytes[flag_bytes];
+
+        (flag_bytes, end_index)
     }
 
     pub fn cut_off_path(&self, index: usize) -> Result<&CutOffPath, String> {
@@ -55,24 +58,24 @@ pub struct CutOffPath {
 }
 
 impl CutOffPath {
+    const FIELD_INTERRUPTION_FLAGS: [FieldInterruptionFlags; 8] = [
+        FieldInterruptionFlags::BIT_0,
+        FieldInterruptionFlags::BIT_1,
+        FieldInterruptionFlags::BIT_2,
+        FieldInterruptionFlags::BIT_3,
+        FieldInterruptionFlags::BIT_4,
+        FieldInterruptionFlags::BIT_5,
+        FieldInterruptionFlags::BIT_6,
+        FieldInterruptionFlags::BIT_7,
+    ];
+
     fn from_bytes(bytes: &[u8]) -> Self {
         let mut field_interruptions: Vec<Beam> = Vec::new();
 
         for byte in bytes {
             let byte = FieldInterruptionFlags::from_bits_truncate(*byte);
 
-            let bits: Vec<FieldInterruptionFlags> = vec![
-                FieldInterruptionFlags::BIT_0,
-                FieldInterruptionFlags::BIT_1,
-                FieldInterruptionFlags::BIT_2,
-                FieldInterruptionFlags::BIT_3,
-                FieldInterruptionFlags::BIT_4,
-                FieldInterruptionFlags::BIT_5,
-                FieldInterruptionFlags::BIT_6,
-                FieldInterruptionFlags::BIT_7,
-            ];
-
-            for bit in bits {
+            for bit in Self::FIELD_INTERRUPTION_FLAGS {
                 if byte.contains(bit) {
                     field_interruptions.push(Beam::Interrupted);
                 } else {
@@ -93,11 +96,6 @@ impl CutOffPath {
         }
     }
 }
-#[derive(Clone, Debug, PartialEq)]
-pub enum Beam {
-    Interrupted,
-    NotInterrupted,
-}
 
 bitflags! {
     struct FieldInterruptionFlags: u8 {
@@ -110,6 +108,12 @@ bitflags! {
         const BIT_6 = 0b0100_0000;
         const BIT_7 = 0b1000_0000;
     }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Beam {
+    Interrupted,
+    NotInterrupted,
 }
 
 #[cfg(test)]
@@ -197,7 +201,7 @@ mod field_interruption_tests {
         let mut test_data: Vec<u8> = Vec::new();
         let mut cut_off_paths: Vec<CutOffPath> = Vec::new();
 
-        for i in 1..=24 {
+        for i in 0..24 {
             if i < 12 {
                 test_data.extend(number_of_bytes.clone());
                 test_data.extend(flags_variation_1.clone());
@@ -209,7 +213,9 @@ mod field_interruption_tests {
             }
         }
 
-        let expected_field_interruptions = FieldInterruptions { cut_off_paths };
+        let expected_field_interruptions = FieldInterruptions {
+            cut_off_paths: cut_off_paths.try_into().unwrap(),
+        };
 
         (test_data.try_into().unwrap(), expected_field_interruptions)
     }
