@@ -1,18 +1,9 @@
-// #[derive(PartialEq, Debug)]
-// struct ApplicationData {
-//     inputs: Inputs,
-// }
-//
-// impl ApplicationData {
-//     fn from_bytes(bytes: &[u8]) -> Self {
-//         todo!()
-//     }
-// }
-
+use crate::data_output::application_data::NUMBER_OF_MONITORING_CASES;
+use crate::data_output::bit_flags::bit_status_in_bytes;
 use bitflags::bitflags;
 
 #[derive(PartialEq, Debug)]
-struct Inputs {
+pub struct Inputs {
     static_control_inputs: [StaticControlInput; u32::BITS as usize],
     monitoring_case_numbers: [MonitoringCaseNumber; NUMBER_OF_MONITORING_CASES],
     dynamic_control_inputs: DynamicControlInputs,
@@ -50,8 +41,6 @@ impl StaticControlInput {
         static_control_input.try_into().unwrap()
     }
 }
-
-const NUMBER_OF_MONITORING_CASES: usize = 20;
 
 #[derive(PartialEq, Debug, Copy, Clone)]
 struct MonitoringCaseNumber {
@@ -146,48 +135,11 @@ impl StandbyStateInput {
     }
 }
 
-fn bit_status_in_bytes(index: usize, bytes: &[u8]) -> bool {
-    const BIT_FLAGS: [BitFlags; 8] = [
-        BitFlags::BIT_0,
-        BitFlags::BIT_1,
-        BitFlags::BIT_2,
-        BitFlags::BIT_3,
-        BitFlags::BIT_4,
-        BitFlags::BIT_5,
-        BitFlags::BIT_6,
-        BitFlags::BIT_7,
-    ];
-
-    let bytes = bytes
-        .iter()
-        .map(|byte| BitFlags::from_bits_truncate(*byte))
-        .collect::<Vec<BitFlags>>();
-
-    let byte = index / u8::BITS as usize;
-    let bit = index % u8::BITS as usize;
-
-    bytes[byte].contains(BIT_FLAGS[bit].clone())
-}
-
-bitflags! {
-    #[derive(Clone)]
-    struct BitFlags: u8 {
-        const BIT_0 = 0b0000_0001;
-        const BIT_1 = 0b0000_0010;
-        const BIT_2 = 0b0000_0100;
-        const BIT_3 = 0b0000_1000;
-        const BIT_4 = 0b0001_0000;
-        const BIT_5 = 0b0010_0000;
-        const BIT_6 = 0b0100_0000;
-        const BIT_7 = 0b1000_0000;
-    }
-}
-
 #[cfg(test)]
 mod application_data_tests {
     use array_concat::concat_arrays;
 
-    use crate::data_output::application_data::{
+    use crate::data_output::application_data::input::{
         DynamicControlInputs, Inputs, MonitoringCaseNumber, Speed, StandbyStateInput,
         StaticControlInput, Switchover,
     };
